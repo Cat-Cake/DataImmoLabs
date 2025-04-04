@@ -1,0 +1,164 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard - DataImmoLabs{% endblock %}
+
+{% block stylesheets %}
+    <style>
+        body {
+            background-color: #f5f6fa;
+            font-family: 'Segoe UI', sans-serif;
+            color: #2c3e50;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-card {
+            background: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .dashboard-card h2 {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #7f8c8d;
+        }
+
+        .dashboard-card .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .dashboard-charts {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-card canvas {
+            width: 100% !important;
+            max-height: 300px !important;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="container py-5">
+        <h1 class="text-center fw-bold mb-5">Dashboard - DataImmoLabs</h1>
+
+        <div class="dashboard-container">
+            <div class="dashboard-card">
+                <h2>Transactions totales</h2>
+                <div class="value" id="totalTransactions">{{ totalTransactions.value }}</div>
+            </div>
+            <div class="dashboard-card">
+                <h2>Prix moyen au m²</h2>
+                <div class="value" id="avgPricePerM2">- €</div>
+            </div>
+            <div class="dashboard-card">
+                <h2>Nombre de villes</h2>
+                <div class="value" id="totalCities">-</div>
+            </div>
+        </div>
+
+        <div class="dashboard-charts">
+            <div class="chart-card">
+                <h5 class="mb-4">Valeur foncière par département (€)</h5>
+                <canvas id="valueByDeptChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h5 class="mb-4">Transactions par type de bien</h5>
+                <canvas id="typeChart"></canvas>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+            const deptLabels = {{ deptValues|map(d => d.id)|json_encode|raw }};
+            const deptData = {{ deptValues|map(d => d.value)|json_encode|raw }};
+
+            const typeLabels = {{ typeValues|map(t => t.id)|json_encode|raw }};
+            const typeData = {{ typeValues|map(t => t.value)|json_encode|raw }};
+
+            const deptCtx = document.getElementById('valueByDeptChart');
+            const typeCtx = document.getElementById('typeChart');
+
+            if (deptCtx) {
+                new Chart(deptCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: deptLabels,
+                        datasets: [{
+                            label: 'Valeur foncière (€)',
+                            data: deptData,
+                            backgroundColor: '#3498db'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (typeCtx) {
+                new Chart(typeCtx.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: typeLabels,
+                        datasets: [{
+                            label: 'Types de bien',
+                            data: typeData,
+                            backgroundColor: [
+                                '#1abc9c', '#3498db', '#9b59b6', '#e67e22', '#e74c3c', '#f1c40f'
+                            ],
+                            borderColor: '#ffffff',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}
