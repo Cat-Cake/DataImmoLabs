@@ -4,8 +4,8 @@ namespace App\Document;
 
 use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
 
-#[MongoDB\Document(collection: "valeur_par_departement")]
-class ValueDepartmentTransactions
+#[MongoDB\Document]
+class ValueDepartment
 {
     #[MongoDB\Id]
     private ?string $id = null;

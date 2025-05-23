@@ -2,85 +2,25 @@
 
 {% block title %}Dashboard - DataImmoLabs{% endblock %}
 
-{% block stylesheets %}
-    <style>
-        body {
-            background-color: #f5f6fa;
-            font-family: 'Segoe UI', sans-serif;
-            color: #2c3e50;
-        }
-
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .dashboard-card {
-            background: #fff;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s ease;
-        }
-
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .dashboard-card h2 {
-            font-size: 16px;
-            font-weight: 500;
-            margin-bottom: 10px;
-            color: #7f8c8d;
-        }
-
-        .dashboard-card .value {
-            font-size: 28px;
-            font-weight: 700;
-        }
-
-        .dashboard-charts {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        .chart-card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .chart-card canvas {
-            width: 100% !important;
-            max-height: 300px !important;
-        }
-    </style>
-{% endblock %}
-
 {% block body %}
+    <div id="loader-wrapper">
+        <div id="loader"></div>
+    </div>
     <div class="container py-5">
         <h1 class="text-center fw-bold mb-5">Dashboard - DataImmoLabs</h1>
 
         <div class="dashboard-container">
-            <div class="dashboard-card">
-                <h2>Transactions totales</h2>
+            <div class="dashboard-card full">
+                <h2>Nombre de transactions totales</h2>
                 <div class="value" id="totalTransactions">{{ totalTransactions.value }}</div>
             </div>
-            <div class="dashboard-card">
-                <h2>Prix moyen au m²</h2>
-                <div class="value" id="avgPricePerM2">- €</div>
+            <div class="dashboard-card full">
+                <h2>Total valeur transaction</h2>
+                <div class="value" id="avgPricePerM2">{{ totalValues.value }} €</div>
             </div>
-            <div class="dashboard-card">
-                <h2>Nombre de villes</h2>
-                <div class="value" id="totalCities">-</div>
+            <div class="dashboard-card full">
+                <h2>Commune avec le plus de transactions</h2>
+                <div class="value" id="totalCities">{{ cityTransactions.id }} - {{ cityTransactions.value }}</div>
             </div>
         </div>
 
@@ -95,10 +35,124 @@
             </div>
         </div>
     </div>
+    <div class="dashboard-hotspot-container container">
+        <div class="dashboard-card hotspot">
+            <h2>Villes en forte croissance 2010-2021</h2>
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Commune</th>
+                    <th>Code Postal</th>
+                    <th>Popu 2010</th>
+                    <th>Popu 2021</th>
+                    <th>Croissance %</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for hotspot in hotspotValues|slice(0, 10) %}
+                    {% set communeName = '' %}
+                    {% for commune in totalCommunes %}
+                        {% if commune.code_commune == hotspot.code_commune %}
+                            {% set communeName = commune.nom_commune %}
+                        {% endif %}
+                    {% endfor %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ communeName is not empty ? communeName : 'Inconnu' }}</td>
+                        <td>{{ hotspot.code_commune }}</td>
+                        <td>{{ hotspot.population['2010'] }}</td>
+                        <td>{{ hotspot.population['2021'] }}</td>
+                        <td>{{ hotspot.croissance }}%</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="dashboard-card hotspot">
+            <h2 class="text-center mb-3">Prix moyen au m² par commune</h2>
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Commune</th>
+                    <th>Code</th>
+                    <th>Transactions</th>
+                    <th>Prix moyen €/m²</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for stat in priceStats|slice(0, 10) %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ stat.ville.ville }}</td>
+                        <td>{{ stat.ville.type }}</td>
+                        <td>{{ stat.transactions }}</td>
+                        <td>{{ stat.prix_moyen_m2|number_format(2, '.', ' ') }} €/m²</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="dashboard-card mt-4">
+        <h2 class="text-center mb-3">URL API disponibles</h2>
+        <ul class="list-group">
+            <li class="list-group-item">
+                <strong>Transactions</strong><br>
+                <div><a href="/api/transactions"><code>GET /api/transactions</code></a> — Retourne toutes les transactions</div>
+                <div><a href="/api/transactions/ID_EXEMPLE"><code>GET /api/transactions/{id}</code></a> — Retourne une transaction par ID</div>
+                <div><a href="/api/transactions?page=1&amp;limit=1000"><code>GET /api/transactions?page=1&amp;limit=1000</code></a> — Option pour changer de page et la limite</div>
+            </li>
+            <li class="list-group-item">
+                <strong>Statistiques par ville</strong><br>
+                <div><a href="/api/statistique-ville"><code>GET /api/statistique-ville</code></a> — Transactions par type et ville</div>
+                <div><a href="/api/statistique-ville/ID_EXEMPLE"><code>GET /api/statistique-ville/{id}</code></a> — Retourne une transaction avec type et ville par ID</div>
+                <div><a href="/api/statistique-ville?page=1&amp;limit=1000"><code>GET /api/statistique-ville?page=1&amp;limit=1000</code></a> — Option pour changer de page et la limite</div>
+            </li>
+            <li class="list-group-item">
+                <strong>Population</strong><br>
+                <div><a href="/api/populations"><code>GET /api/populations</code></a> — Données démographiques</div>
+                <div><a href="/api/populations/ID_EXEMPLE"><code>GET /api/populations/{id}</code></a> — Retourne donnée démographique par ID</div>
+                <div><a href="/api/populations?page=1&amp;limit=1000"><code>GET /api/populations?page=1&amp;limit=1000</code></a> — Option pour changer de page et la limite</div>
+            </li>
+            <li class="list-group-item">
+                <strong>Départements</strong><br>
+                <div><a href="/api/department"><code>GET /api/department</code></a> — Valeurs par départements</div>
+                <div><a href="/api/department/ID_EXEMPLE"><code>GET /api/department/{id}</code></a> — Valeur du département par ID</div>
+            </li>
+            <li class="list-group-item">
+                <strong>Croissance démographique</strong><br>
+                <div><a href="/api/croissance"><code>GET /api/croissance</code></a> — Données croisées population/croissance</div>
+                <div><a href="/api/croissance/ID_EXEMPLE"><code>GET /api/croissance/{id}</code></a> — Donnée croisée population/croissance par ID</div>
+                <div><a href="/api/croissance?page=1&amp;limit=1000"><code>GET /api/croissance?page=1&amp;limit=1000</code></a> — Option pour changer de page et la limite</div>
+            </li>
+        </ul>
+    </div>
+    <footer class="footer">
+        <div class="container text-center">
+            <p class="mb-0 small text-secondary">
+                Données issues de l’INSEE et des services publics, retraitées par DataImmoLabs
+            </p>
+            <p class="mb-1 text-muted">
+                © {{ "now"|date("Y") }} DataImmoLabs. Tous droits réservés.
+            </p>
+        </div>
+    </footer>
 {% endblock %}
+
 
 {% block javascripts %}
     {{ parent() }}
+    <script>
+        window.addEventListener('load', function () {
+            const loader = document.getElementById('loader-wrapper');
+            if (loader) {
+                loader.style.display = 'none';
+            }
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script type="text/javascript">
@@ -125,9 +179,30 @@
                     },
                     options: {
                         responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#000'
+                                }
+                            }
+                        },
                         scales: {
+                            x: {
+                                ticks: {
+                                    color: '#000',
+                                    font: {
+                                        size: 14
+                                    }
+                                }
+                            },
                             y: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                ticks: {
+                                    color: '#000',
+                                    font: {
+                                        size: 14
+                                    }
+                                }
                             }
                         }
                     }
@@ -153,7 +228,13 @@
                         responsive: true,
                         plugins: {
                             legend: {
-                                position: 'right'
+                                position: 'right',
+                                labels: {
+                                    color: '#000',
+                                    font: {
+                                        size: 16
+                                    }
+                                }
                             }
                         }
                     }
